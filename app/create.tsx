@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, Image, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -15,6 +15,12 @@ export default function CreateNoteScreen() {
   const router = useRouter();
 
   const pickGalleryImage = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission required', 'We need gallery access to select an image.');
+      return;
+    }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -62,28 +68,36 @@ export default function CreateNoteScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#FAFAFA]">
-      <ScrollView className="flex-1 p-5">
-        <TextInput
-          className="text-3xl font-bold text-zinc-900 mb-6"
-          placeholder="Note Title"
-          placeholderTextColor="#A1A1AA"
-          value={title}
-          onChangeText={setTitle}
-        />
+    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-[#FAFAFA]">
+      <ScrollView 
+        className="flex-1"
+        contentContainerStyle={{ paddingTop: 24, paddingHorizontal: 20, paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <View className="bg-white border border-zinc-200 rounded-2xl px-4 py-3 mb-4 shadow-sm" style={{ elevation: 1 }}>
+          <TextInput
+            className="text-xl font-bold text-zinc-900"
+            placeholder="Note Title"
+            placeholderTextColor="#A1A1AA"
+            value={title}
+            onChangeText={setTitle}
+          />
+        </View>
         
-        <TextInput
-          className="text-lg text-zinc-700 min-h-[150px] mb-8 leading-relaxed"
-          placeholder="Start typing..."
-          placeholderTextColor="#D4D4D8"
-          multiline
-          textAlignVertical="top"
-          value={content}
-          onChangeText={setContent}
-        />
+        <View className="bg-white border border-zinc-200 rounded-2xl px-4 py-4 mb-6 shadow-sm min-h-[180px]" style={{ elevation: 1 }}>
+          <TextInput
+            className="text-base text-zinc-700 leading-relaxed"
+            placeholder="Start typing..."
+            placeholderTextColor="#D4D4D8"
+            multiline
+            textAlignVertical="top"
+            value={content}
+            onChangeText={setContent}
+          />
+        </View>
 
         {imageUri ? (
-          <View className="mb-8 relative">
+          <View className="mb-8 relative shadow-sm">
             <Image source={{ uri: imageUri }} className="w-full h-64 rounded-2xl border border-zinc-200" />
             <TouchableOpacity 
               className="absolute top-3 right-3 bg-zinc-900/70 rounded-full p-2"
@@ -95,7 +109,7 @@ export default function CreateNoteScreen() {
         ) : (
           <View className="flex-row gap-4 mb-8">
             <TouchableOpacity 
-              className="flex-1 flex-row justify-center items-center bg-white border border-zinc-200 py-4 rounded-xl" 
+              className="flex-1 flex-row justify-center items-center bg-white border border-zinc-200 py-4 rounded-2xl shadow-sm" 
               onPress={takePhoto}
             >
               <Camera size={20} color="#52525B" />
@@ -103,7 +117,7 @@ export default function CreateNoteScreen() {
             </TouchableOpacity>
             
             <TouchableOpacity 
-              className="flex-1 flex-row justify-center items-center bg-white border border-zinc-200 py-4 rounded-xl" 
+              className="flex-1 flex-row justify-center items-center bg-white border border-zinc-200 py-4 rounded-2xl shadow-sm" 
               onPress={pickGalleryImage}
             >
               <ImageIcon size={20} color="#52525B" />
@@ -113,9 +127,9 @@ export default function CreateNoteScreen() {
         )}
       </ScrollView>
 
-      <View className="p-5 bg-[#FAFAFA] border-t border-zinc-100">
+      <View className="p-5 bg-[#FAFAFA] border-t border-zinc-100 pb-10">
         <TouchableOpacity 
-          className="bg-zinc-900 flex-row justify-center items-center py-4 rounded-xl" 
+          className="bg-zinc-900 flex-row justify-center items-center py-4 rounded-2xl shadow-sm active:scale-[0.98]" 
           onPress={saveNote}
           activeOpacity={0.8}
         >
@@ -123,6 +137,6 @@ export default function CreateNoteScreen() {
           <Text className="text-white font-semibold text-lg ml-2">Save Note</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

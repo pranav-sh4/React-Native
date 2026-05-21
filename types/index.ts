@@ -4,4 +4,5 @@ export interface Note {
   content: string;
   imageUri: string | null;
   createdAt: string;
+  isPinned?: boolean;
 }
