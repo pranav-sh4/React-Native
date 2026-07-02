@@ -1,98 +1,94 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useRef, useState, useMemo } from 'react';
+import { View, Text, StyleSheet, TextInput, TouchableOpacity, Keyboard } from 'react-native';
+import MapView, { Marker, Callout, PROVIDER_DEFAULT } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 
-import { HelloWave } from '@/components/hello-wave';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Link } from 'expo-router';
+import { mockDevices } from '../../constants/Devices';
 
-export default function HomeScreen() {
+const INITIAL_REGION = {
+  latitude: 12.92,
+  longitude: 76.2, 
+  latitudeDelta: 3.5, 
+  longitudeDelta: 3.5,
+};
+
+export default function DeviceMapScreen() {
+  const mapRef = useRef<MapView>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const filteredDevices = useMemo(() => {
+    if (!searchQuery.trim()) return mockDevices;
+    
+    const query = searchQuery.toLowerCase();
+    return mockDevices.filter(
+      (device) => 
+        device.name.toLowerCase().includes(query) || 
+        device.id.toLowerCase().includes(query)
+    );
+  }, [searchQuery]);
+
+  const handleClearSearch = () => {
+    setSearchQuery('');
+    Keyboard.dismiss();
+  };
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
+    <View className="flex-1 bg-gray-50">
+      
+      <View className="absolute top-14 left-4 right-4 z-10 flex-row items-center bg-white rounded-full px-4 py-3 shadow-lg shadow-black/10 border border-gray-100">
+        <Ionicons name="search" size={22} color="#6b7280" />
+        <TextInput
+          className="flex-1 ml-3 text-base text-gray-800"
+          placeholder="Search devices by name or ID..."
+          placeholderTextColor="#9ca3af"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          returnKeyType="search"
+          autoCorrect={false}
         />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <Link href="/modal">
-          <Link.Trigger>
-            <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-          </Link.Trigger>
-          <Link.Preview />
-          <Link.Menu>
-            <Link.MenuAction title="Action" icon="cube" onPress={() => alert('Action pressed')} />
-            <Link.MenuAction
-              title="Share"
-              icon="square.and.arrow.up"
-              onPress={() => alert('Share pressed')}
-            />
-            <Link.Menu title="More" icon="ellipsis">
-              <Link.MenuAction
-                title="Delete"
-                icon="trash"
-                destructive
-                onPress={() => alert('Delete pressed')}
-              />
-            </Link.Menu>
-          </Link.Menu>
-        </Link>
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={handleClearSearch} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <Ionicons name="close-circle" size={20} color="#9ca3af" />
+          </TouchableOpacity>
+        )}
+      </View>
 
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
+      <View className="flex-1 relative overflow-hidden">
+        <MapView
+          ref={mapRef}
+          style={StyleSheet.absoluteFillObject}
+          provider={PROVIDER_DEFAULT}
+          initialRegion={INITIAL_REGION}
+          showsUserLocation={false}
+          zoomEnabled={true}
+        >
+          {filteredDevices.map((device) => (
+            <Marker
+              key={device.id}
+              coordinate={{
+                latitude: device.latitude,
+                longitude: device.longitude,
+              }}
+            >
+              <Callout tooltip>
+                <View className="bg-white rounded-lg p-3 min-w-[150px] shadow-md border border-gray-100">
+                  <Text className="font-bold text-sm text-gray-800 mb-1">
+                    {device.name}
+                  </Text>
+                  <Text className="text-xs text-gray-500">ID: {device.id}</Text>
+                </View>
+              </Callout>
+            </Marker>
+          ))}
+        </MapView>
+      </View>
+      
+      {filteredDevices.length === 0 && (
+        <View className="absolute bottom-10 self-center bg-gray-800 px-6 py-3 rounded-full shadow-lg">
+          <Text className="text-white font-medium text-sm">No devices found</Text>
+        </View>
+      )}
+
+    </View>
   );
 }
-
-const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
-  },
-});
